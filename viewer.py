@@ -4,6 +4,9 @@ import time
 
 UPDATE_DELAY = 0.5
 
+viewSize = (764, 512)
+
+
 class Screen(object):
     def __init__(self, dimensions):
         self.width = dimensions[0]
@@ -25,8 +28,10 @@ class Domain(object):
         self.d1 = (x1, y1)
 
 class Viewport(object):
-    def __init__(self, screen_dimensions = (764, 512), domain_width = 3.0):
+    def __init__(self, screen_dimensions = (764, 512), function=None, domain_width = 3.0):
         self.screen = Screen(screen_dimensions)
+
+        self.function = function
 
         domain_width = domain_width
         domain_height = domain_width / screen_dimensions[0] * screen_dimensions[1]
@@ -50,7 +55,7 @@ class Viewport(object):
             return True
         return False
 
-    def evaluate(self, function):
+    def evaluate(self):
         v0 = np.empty((self.screen.width, self.screen.height), dtype=np.complex64)
         v1 = np.empty((self.screen.width, self.screen.height), dtype=np.complex64)
 
@@ -61,7 +66,7 @@ class Viewport(object):
 
         c = xv + 1j * yv
 
-        fc = function(c)
+        fc = self.function(c)
 
         self.x = 0
         self.y = 0
@@ -104,10 +109,6 @@ class Viewport(object):
         # pyg.gl.glDrawArrays(pyg.gl.GL_QUADS, 0, 4)
         # pyg.gl.glPopClientAttrib()        
 
-viewSize = (764, 512)
-
-view = Viewport(viewSize, 4.0)
-
 def mandelbrot(c):
     z = c
     rv = np.zeros_like(c, dtype=np.int16)
@@ -121,8 +122,13 @@ def mandelbrot(c):
 def update(dt):
     pass
 
+def render(values): 
+    imageValues = (255 - (values / 80.0 * 255.0)).astype(np.uint8)
+    imageData = imageValues.tobytes()
+    image = pyg.image.ImageData(viewSize[0], viewSize[1], 'R', imageData, viewSize[0])
+    return image
+
 window = pyg.window.Window()
-image = None
 
 @window.event
 def on_draw():
@@ -131,10 +137,7 @@ def on_draw():
     window.clear()
 
     if view.needsUpdate():
-        values = view.evaluate(mandelbrot)
-        imageValues = (255 - (values / 80.0 * 255.0)).astype(np.uint8)
-        imageData = imageValues.tobytes()
-        image = pyg.image.ImageData(viewSize[0], viewSize[1], 'R', imageData, viewSize[0])
+        image = render(view.evaluate())
     
     view.draw(image)
 
@@ -143,4 +146,6 @@ def on_mouse_scroll(x, y, scroll_x, scroll_y):
     view.scroll(x, y, scroll_x, scroll_y)
     pyg.clock.schedule_once(update, UPDATE_DELAY)
     
+view = Viewport(viewSize, mandelbrot, 4.0)
+image = None
 pyg.app.run()
