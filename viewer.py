@@ -83,27 +83,6 @@ class Viewport(object):
         self.tupdate = time.time() + UPDATE_DELAY - 0.1
         self.__needsUpdate = True
 
-    def draw(self, image):
-
-        image.blit(self.x, self.y)
-        print('scale', image.scale)
-
-        # texture = image.get_texture()
-
-        # (x, y, z): bottom-left, bottom-right, top-right and top-left
-        # (0.0, 0.0, 0.0, 0.74609375, 0.0, 0.0, 0.74609375, 1.0, 0.0, 0.0, 1.0, 0.0)
-        # tc = texture.tex_coords
-
-        # print(tc)
-        # w, h = texture.width, texture.height
-        # z = 0.0
-
-
-        # pyg.gl.glPushClientAttrib(pyg.gl.GL_CLIENT_VERTEX_ARRAY_BIT)
-        # pyg.gl.glInterleavedArrays(pyg.gl.GL_T4F_V4F, 0, array)
-        # pyg.gl.glDrawArrays(pyg.gl.GL_QUADS, 0, 4)
-        # pyg.gl.glPopClientAttrib()        
-
 def mandelbrot(c):
     z = c
     rv = np.zeros_like(c, dtype=np.int16)
@@ -128,20 +107,29 @@ window = pyg.window.Window(width=viewSize[0], height=viewSize[1])
 
 @window.event
 def on_draw():
-    global image
+    global imageSprite
 
     window.clear()
 
     if view.needsUpdate():
         image = render(view.evaluate())
+        imageSprite = pyg.sprite.Sprite(image, x=0, y=0)
     
-    view.draw(image)
+    if imageSprite != None:
+        imageSprite.draw()
 
 @window.event
 def on_mouse_scroll(x, y, scroll_x, scroll_y):
+    global imageSprite
+
     view.scroll(x, y, scroll_x, scroll_y)
+
+    if imageSprite != None:
+        imageSprite.x = view.x
+        imageSprite.y = view.y
+
     pyg.clock.schedule_once(update, UPDATE_DELAY)
     
 view = Viewport(viewSize, mandelbrot, 4.0)
-image = None
+imageSprite = None
 pyg.app.run()
