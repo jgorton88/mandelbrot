@@ -33,12 +33,12 @@ class Viewport(object):
 
         self.function = function
 
-        domain_width = domain_width
         domain_height = domain_width / screen_dimensions[0] * screen_dimensions[1]
         x0 = -domain_width/2.0
         x1 = x0 + domain_width
         y0 = -domain_height/2.0
         y1 = y0 + domain_height
+        # print('(', x0, y0, ') (', x1, y1, ')')
         self.domain = Domain((domain_width, domain_height), (x0, y0), (x1, y1))
 
         self.x = 0
@@ -86,23 +86,18 @@ class Viewport(object):
     def draw(self, image):
 
         image.blit(self.x, self.y)
+        print('scale', image.scale)
 
-        # texture = imageData.get_texture()
+        # texture = image.get_texture()
 
-        # t = texture.tex_coords
-        # print(t)
+        # (x, y, z): bottom-left, bottom-right, top-right and top-left
+        # (0.0, 0.0, 0.0, 0.74609375, 0.0, 0.0, 0.74609375, 1.0, 0.0, 0.0, 1.0, 0.0)
+        # tc = texture.tex_coords
+
+        # print(tc)
         # w, h = texture.width, texture.height
         # z = 0.0
 
-        # array = (pyg.gl.GLfloat * 32)(
-        #     t[0],           t[1],    t[2],       1.,
-        #     self.x,       self.y,       z,       1.,
-        #     t[3],           t[4],    t[5],       1.,
-        #     self.x + w,   self.y,       z,       1.,
-        #     t[6],           t[7],    t[8],       1.,
-        #     self.x + w,   self.y + h,   z,       1.,
-        #     t[9],          t[10],   t[11],       1.,
-        #     self.x,       self.y + h,   z,       1.)
 
         # pyg.gl.glPushClientAttrib(pyg.gl.GL_CLIENT_VERTEX_ARRAY_BIT)
         # pyg.gl.glInterleavedArrays(pyg.gl.GL_T4F_V4F, 0, array)
@@ -122,13 +117,14 @@ def mandelbrot(c):
 def update(dt):
     pass
 
+# https://www.codingame.com/playgrounds/2358/how-to-plot-the-mandelbrot-set/adding-some-colors
 def render(values): 
     imageValues = (255 - (values / 80.0 * 255.0)).astype(np.uint8)
     imageData = imageValues.tobytes()
     image = pyg.image.ImageData(viewSize[0], viewSize[1], 'R', imageData, viewSize[0])
     return image
 
-window = pyg.window.Window()
+window = pyg.window.Window(width=viewSize[0], height=viewSize[1])
 
 @window.event
 def on_draw():
