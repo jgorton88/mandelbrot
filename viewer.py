@@ -1,54 +1,36 @@
 import numpy as np
 import pyglet as pyg
-import time
 
-UPDATE_DELAY = 0.5
+import time
+import math
+import threading
+
+from geometry import *
+
+UPDATE_DELAY = 0.2
 
 viewSize = (764, 512)
 
-
-class Screen(object):
-    def __init__(self, dimensions):
-        self.width = dimensions[0]
-        self.height = dimensions[1]
-
-class Domain(object):
-    def __init__(self, dimensions, d0, d1):
-        self.width = dimensions[0]
-        self.height = dimensions[1]
-        self.d0 = d0
-        self.d1 = d1
-
-    def translate(self, dx, dy):
-        x0 = self.d0[0] + dx
-        y0 = self.d0[1] + dy
-        x1 = x0 + self.width
-        y1 = y0 + self.height
-        self.d0 = (x0, y0)
-        self.d1 = (x1, y1)
-
 class Viewport(object):
     def __init__(self, screen_dimensions = (764, 512), function=None, domain_width = 3.0):
-        self.screen = Screen(screen_dimensions)
-
         self.function = function
 
         domain_height = domain_width / screen_dimensions[0] * screen_dimensions[1]
         x0 = -domain_width/2.0
-        x1 = x0 + domain_width
         y0 = -domain_height/2.0
-        y1 = y0 + domain_height
-        # print('(', x0, y0, ') (', x1, y1, ')')
-        self.domain = Domain((domain_width, domain_height), (x0, y0), (x1, y1))
+        self.domain = Rect((domain_width, domain_height), (x0, y0))
 
-        self.x = 0
-        self.y = 0
+        self.screen_dim = Point((screen_dimensions[0], screen_dimensions[1]))
 
-        self.ddx = domain_width / screen_dimensions[0]
-        self.ddy = domain_height / screen_dimensions[1]
+        self.view = Rect(self.screen_dim, (0, 0))
+        self.scale = 1.0
+
+        self.pitch = Point((self.domain.dim.x / self.screen_dim.x, self.domain.dim.y / self.screen_dim.y))
 
         self.tupdate = 0.0
         self.__needsUpdate = True
+
+        self.lock = threading.Lock()
 
     def needsUpdate(self):
         if self.__needsUpdate and (time.time() > self.tupdate):
@@ -56,11 +38,8 @@ class Viewport(object):
         return False
 
     def evaluate(self):
-        v0 = np.empty((self.screen.width, self.screen.height), dtype=np.complex64)
-        v1 = np.empty((self.screen.width, self.screen.height), dtype=np.complex64)
-
-        xspan = np.linspace(self.domain.d0[0], self.domain.d1[0], num=self.screen.width, endpoint=True)
-        yspan = np.linspace(self.domain.d0[1], self.domain.d1[1], num=self.screen.height, endpoint=True)
+        xspan = np.linspace(self.domain.p0.x, self.domain.p1.x, num=self.screen_dim.x, endpoint=True)
+        yspan = np.linspace(self.domain.p0.y, self.domain.p1.y, num=self.screen_dim.y, endpoint=True)
 
         xv, yv = np.meshgrid(xspan, yspan, sparse=False, indexing='xy')
 
@@ -68,21 +47,53 @@ class Viewport(object):
 
         fc = self.function(c)
 
-        self.x = 0
-        self.y = 0
+        self.view = Rect(self.screen_dim, (0, 0))
+        self.scale = 1.0
         self.__needsUpdate = False
 
         return fc
 
     def scroll(self, x, y, dx, dy):
-        self.x += dx
-        self.y += dy
+        self.lock.acquire()
 
-        self.domain.translate(-dx*self.ddx, -dy*self.ddy)
+        self.view += Point((dx, dy))
+
+        self.domain += Point((-dx*self.pitch.x, -dy*self.pitch.y))
 
         self.tupdate = time.time() + UPDATE_DELAY - 0.1
         self.__needsUpdate = True
 
+        self.lock.release()
+
+    def rescale(self, scale, apply=False):
+        self.scale = scale
+        self.view = Rect(self.screen_dim, (0, 0)) * scale
+
+        if apply:
+            self.domain *= 1.0 / self.scale
+            print('domain', self.domain)
+            
+            self.pitch = Point((self.domain.dim.x / self.screen_dim.x, self.domain.dim.y / self.screen_dim.y))
+
+            self.tupdate = time.time()
+            self.__needsUpdate = True
+
+    def click(self, x, y):
+        self.anchor = Point((x, y))
+
+    def drag(self, x, y, apply=False):
+        self.lock.acquire()
+
+        dragged = Point((x, y)) - self.anchor
+
+        ratio = dragged.x / self.screen_dim.x
+        dscale = 1.0 + ratio
+        bscale = min(max(0.1, dscale), 10.0)
+
+        self.rescale(bscale, apply)
+
+        self.lock.release()
+        
 def mandelbrot(c):
     z = c
     rv = np.zeros_like(c, dtype=np.int16)
@@ -112,24 +123,32 @@ def on_draw():
     window.clear()
 
     if view.needsUpdate():
-        image = render(view.evaluate())
-        imageSprite = pyg.sprite.Sprite(image, x=0, y=0)
+        imageSprite = pyg.sprite.Sprite(render(view.evaluate()), x=0, y=0)
     
     if imageSprite != None:
+        imageSprite.x = view.view.origin.x
+        imageSprite.y = view.view.origin.y
+        imageSprite.scale = view.scale
         imageSprite.draw()
 
 @window.event
 def on_mouse_scroll(x, y, scroll_x, scroll_y):
-    global imageSprite
-
     view.scroll(x, y, scroll_x, scroll_y)
-
-    if imageSprite != None:
-        imageSprite.x = view.x
-        imageSprite.y = view.y
-
     pyg.clock.schedule_once(update, UPDATE_DELAY)
     
+@window.event
+def on_mouse_press(x, y, button, modifiers):
+    view.click(x, y)
+
+@window.event
+def on_mouse_drag(x, y, dx, dy, buttons, modifiers):
+    view.drag(x, y)
+
+@window.event
+def on_mouse_release(x, y, button, modifiers):
+    view.drag(x, y, apply=True)
+    #pyg.clock.schedule_once(update, 0.010)
+
 view = Viewport(viewSize, mandelbrot, 4.0)
 imageSprite = None
 pyg.app.run()
