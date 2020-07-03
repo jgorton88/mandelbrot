@@ -60,7 +60,7 @@ class Viewport(object):
 
         self.domain += Point((-dx*self.pitch.x, -dy*self.pitch.y))
 
-        self.tupdate = time.time() + UPDATE_DELAY - 0.1
+        self.tupdate = time.time() + UPDATE_DELAY - 0.05
         self.__needsUpdate = True
 
         self.lock.release()
@@ -72,10 +72,10 @@ class Viewport(object):
         if apply:
             self.domain *= 1.0 / self.scale
             print('domain', self.domain)
-            
+
             self.pitch = Point((self.domain.dim.x / self.screen_dim.x, self.domain.dim.y / self.screen_dim.y))
 
-            self.tupdate = time.time()
+            self.tupdate = time.time() + UPDATE_DELAY - 0.05
             self.__needsUpdate = True
 
     def click(self, x, y):
@@ -147,7 +147,7 @@ def on_mouse_drag(x, y, dx, dy, buttons, modifiers):
 @window.event
 def on_mouse_release(x, y, button, modifiers):
     view.drag(x, y, apply=True)
-    #pyg.clock.schedule_once(update, 0.010)
+    pyg.clock.schedule_once(update, UPDATE_DELAY)
 
 view = Viewport(viewSize, mandelbrot, 4.0)
 imageSprite = None
