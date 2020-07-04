@@ -105,7 +105,9 @@ def mandelbrot(c):
         z = np.power(z, 2.0) + c
         n[np.abs(z) <= 2.0] += 1
 
-    return n# + 1.0 - np.log2(np.log10(np.abs(z)))
+    return n # - np.log2(np.log10(np.abs(z)))
+
+    # http://linas.org/art-gallery/escape/escape.html
 
 def update(dt):
     pass
