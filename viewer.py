@@ -6,10 +6,13 @@ import math
 import threading
 
 from geometry import *
+from render import render
 
 UPDATE_DELAY = 0.2
 
-viewSize = (764, 512)
+MAX_ITERATIONS = 80
+
+viewSize = (764, 512) # width, height
 
 class Viewport(object):
     def __init__(self, screen_dimensions = (764, 512), function=None, domain_width = 3.0):
@@ -86,7 +89,7 @@ class Viewport(object):
 
         dragged = Point((x, y)) - self.anchor
 
-        ratio = dragged.x / self.screen_dim.x
+        ratio = 4.0 * dragged.x / self.screen_dim.x
         dscale = 1.0 + ratio
         bscale = min(max(0.1, dscale), 10.0)
 
@@ -98,7 +101,7 @@ def mandelbrot(c):
     z = c
     rv = np.zeros_like(c, dtype=np.int16)
 
-    for _ in range(80):
+    for _ in range(MAX_ITERATIONS):
         z = np.power(z, 2.0) + c
         rv[np.abs(z) < 2.0] += 1
 
@@ -106,13 +109,6 @@ def mandelbrot(c):
 
 def update(dt):
     pass
-
-# https://www.codingame.com/playgrounds/2358/how-to-plot-the-mandelbrot-set/adding-some-colors
-def render(values): 
-    imageValues = (255 - (values / 80.0 * 255.0)).astype(np.uint8)
-    imageData = imageValues.tobytes()
-    image = pyg.image.ImageData(viewSize[0], viewSize[1], 'R', imageData, viewSize[0])
-    return image
 
 window = pyg.window.Window(width=viewSize[0], height=viewSize[1])
 
@@ -123,7 +119,7 @@ def on_draw():
     window.clear()
 
     if view.needsUpdate():
-        imageSprite = pyg.sprite.Sprite(render(view.evaluate()), x=0, y=0)
+        imageSprite = pyg.sprite.Sprite(render(view.evaluate(), MAX_ITERATIONS), x=0, y=0)
     
     if imageSprite != None:
         imageSprite.x = view.view.origin.x
