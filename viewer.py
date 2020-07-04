@@ -10,7 +10,7 @@ from render import render
 
 UPDATE_DELAY = 0.2
 
-MAX_ITERATIONS = 80
+MAX_ITERATIONS = 128
 
 viewSize = (764, 512) # width, height
 
@@ -98,14 +98,14 @@ class Viewport(object):
         self.lock.release()
         
 def mandelbrot(c):
-    z = c
-    rv = np.zeros_like(c, dtype=np.int16)
+    z = np.zeros_like(c)
+    n = np.zeros_like(c, dtype=np.int16)
 
     for _ in range(MAX_ITERATIONS):
         z = np.power(z, 2.0) + c
-        rv[np.abs(z) < 2.0] += 1
+        n[np.abs(z) <= 2.0] += 1
 
-    return rv
+    return n# + 1.0 - np.log2(np.log10(np.abs(z)))
 
 def update(dt):
     pass
