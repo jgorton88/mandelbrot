@@ -13,11 +13,21 @@ def HSV(m, MAX_ITERATIONS):
     return (hue, saturation, value)
 
 def RGB(m, MAX_ITERATIONS):
-    mnorm = m / MAX_ITERATIONS # 0 .. 1
+    # normalize to interval [0, 1]
+    mnorm = m / MAX_ITERATIONS
 
-    red   = 2.0 * (mnorm - .5)
-    green = 1.0 - 2.0 * np.abs(mnorm - .5)
-    blue  = 1.0 - 2.0 * mnorm
+    # color mapping
+    slope = 1.5
+    red   = slope * (mnorm - .5)
+    green = 1.0 - slope * np.abs(mnorm - .5)
+    blue  = 1.0 - slope * mnorm
+
+    # desaturate a bit
+    # desat = 0.2
+    # gray = 0.2989*red + 0.5870*green + 0.1140*blue # weights from CCIR 601 spec
+    # red = gray * desat + red * (1 - desat)
+    # green = gray * desat + green * (1 - desat)
+    # blue = gray * desat + blue * (1 - desat)
 
     red[red < 0.0]     = 0.0
     green[green < 0.0] = 0.0
