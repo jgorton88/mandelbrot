@@ -112,7 +112,7 @@ def mandelbrot(c):
 def update(dt):
     pass
 
-window = pyg.window.Window(width=viewSize[0], height=viewSize[1])
+window = pyg.window.Window(width=viewSize[0], height=viewSize[1], resizable=True)
 
 @window.event
 def on_draw():
@@ -147,6 +147,14 @@ def on_mouse_release(x, y, button, modifiers):
     view.drag(x, y, apply=True)
     pyg.clock.schedule_once(update, UPDATE_DELAY)
 
+@window.event
+def on_resize(width, height):
+    global view
+    global viewSize
+
+    viewSize = (width, height)
+    view = Viewport(viewSize, mandelbrot, 4.0)
+    
 view = Viewport(viewSize, mandelbrot, 4.0)
 imageSprite = None
 pyg.app.run()
