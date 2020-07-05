@@ -33,7 +33,7 @@ def RGB(m, MAX_ITERATIONS):
     green[green < 0.0] = 0.0
     blue[blue < 0.0]   = 0.0
 
-    red[m >= MAX_ITERATIONS]   = 0.0
+    red[m >= MAX_ITERATIONS]   = 0.5
     green[m >= MAX_ITERATIONS] = 0.0
     blue[m >= MAX_ITERATIONS]  = 0.0
 
@@ -49,15 +49,18 @@ def rendermono(values, MAX_ITERATIONS):
 
     return image
 
-# def render(values, MAX_ITERATIONS):
-#     hues, saturations, values = HSV(values, MAX_ITERATIONS)
-#     hsv_values = np.zeros((values.shape[0], values.shape[1]*3))
-#     hsv_values[:, 0::3] = hues
-#     hsv_values[:, 1::3] = saturations
-#     hsv_values[:, 2::3] = values
-#     image_data = Image.frombytes('HSV', values.shape, hsv_values.astype(np.uint8).tobytes()).convert('RGB').tobytes()
-#     image = pyg.image.ImageData(values.shape[1], values.shape[0], 'RGB', image_data, values.shape[1]*3)
-#     return image
+def renderstripes(values, MAX_ITERATIONS):
+    imageValues = (255.0 * np.fmod(values, 2.0)).astype(np.uint8)
+
+    rgb_values = np.zeros((values.shape[0], values.shape[1]*3))
+    rgb_values[:, 0::3] = 0
+    rgb_values[:, 1::3] = imageValues
+    rgb_values[:, 2::3] = 255 - imageValues
+
+    image_data = rgb_values.astype(np.uint8).tobytes()
+    image = pyg.image.ImageData(values.shape[1], values.shape[0], 'RGB', image_data, values.shape[1]*3)
+
+    return image
 
 def render(values, MAX_ITERATIONS):
     red, green, blue = RGB(values, MAX_ITERATIONS)
