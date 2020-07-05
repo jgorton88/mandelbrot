@@ -2,16 +2,6 @@
 import numpy as np
 import pyglet as pyg
 
-from PIL import Image
-
-def HSV(m, MAX_ITERATIONS):
-    hue = (255.0 * (m / MAX_ITERATIONS))
-    saturation = 255.0 * np.ones_like(m)
-    value = 255.0 * np.ones_like(m)
-    value[m >= MAX_ITERATIONS] = 0.0
-
-    return (hue, saturation, value)
-
 def RGB(m, MAX_ITERATIONS):
     # normalize to interval [0, 1]
     mnorm = m / MAX_ITERATIONS

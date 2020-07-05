@@ -1,11 +1,10 @@
 import numpy as np
 import pyglet as pyg
 
-from pyglet.gl import glViewport, glOrtho
+from pyglet.gl import glViewport
 
 import time
 import math
-import threading
 
 from geometry import *
 from render import render, renderstripes, rendermono
@@ -16,7 +15,6 @@ UPDATE_DELAY = 0.5
 MAX_ITERATIONS = 128
 
 VIEW_SIZE = (764, 512) # width, height
-# VIEW_SIZE = (24, 16) # width, height
 
 def mandelbrot(c):
     z = np.zeros_like(c)
@@ -35,9 +33,6 @@ def mandelbrot(c):
     # http://linas.org/art-gallery/escape/escape.html
     correction = -np.log(np.log(np.abs(zesc)))/np.log(2.0)
     correction[np.isnan(correction)] = 0.0
-
-    # print(n)
-    # print(correction)
 
     return n + correction
 

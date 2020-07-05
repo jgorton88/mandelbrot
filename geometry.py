@@ -10,7 +10,6 @@ class Point(object):
     def __sub__(self, other):
         dx = self.x - other.x
         dy = self.y - other.y
-        # print('__sub__', self.x, other.x, dx, '::', self.y, other.y, dy)
         return Point((dx, dy))
 
     def __iadd__(self, other):
